@@ -37,11 +37,11 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="flex items-center gap-4">
               {isAdmin && (
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => window.location.href = '/admin'}>
                     <Settings className="h-4 w-4 mr-2" />
                     Panel Admin
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => window.location.href = '/users'}>
                     <Users className="h-4 w-4 mr-2" />
                     Usuarios
                   </Button>
