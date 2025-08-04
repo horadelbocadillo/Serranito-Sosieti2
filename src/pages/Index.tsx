@@ -10,7 +10,7 @@ const Index = () => {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4">Bienvenido al Serranito Society</h1>
           <p className="text-xl text-muted-foreground">
-            {isAdmin ? 'Panel de administración disponible' : 'Disfruta del contenido exclusivo del club'}
+            {isAdmin ? 'Panel de administración disponible' : 'Arrehúntate con ghente güena'}
           </p>
         </div>
         
