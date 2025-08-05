@@ -5,13 +5,20 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://jrvwprlhtmlmokzynezh.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpydndwcmxodG1sbW9renluZXpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMDc1MjksImV4cCI6MjA2OTg4MzUyOX0.04knlB4p2OIA48-KBnZThoS6UbzL7gwCu3r232B7i9w";
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+// 🚨 Recuperamos el email del usuario desde localStorage
+const storedUser = typeof window !== 'undefined' ? localStorage.getItem('serranito_user') : null;
+const userEmail = storedUser ? JSON.parse(storedUser).email : '';
 
+// Creamos el cliente con el header personalizado
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+  },
+  global: {
+    headers: {
+      'x-user-email': userEmail || ''
+    }
   }
 });
