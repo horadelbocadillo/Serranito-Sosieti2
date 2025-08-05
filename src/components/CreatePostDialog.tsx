@@ -3,11 +3,11 @@ import { useForm } from 'react-hook-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import RichTextEditor from './RichTextEditor';
 
 interface CreatePostDialogProps {
   open: boolean;
@@ -109,10 +109,10 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated }: CreatePostDialo
                 <FormItem>
                   <FormLabel>Contenido</FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <RichTextEditor 
                       placeholder="Escribe el contenido del post..."
-                      className="min-h-[200px]"
-                      {...field}
+                      value={field.value}
+                      onChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage />
