@@ -51,7 +51,7 @@ const Layout = ({ children }: LayoutProps) => {
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
                   {user.email}
-                  {isAdmin && <span className="ml-1 text-blue font-medium">(Admin)</span>}
+                  {isAdmin && <span className="ml-1 text-blue-600 font-medium">(Admin)</span>}
                 </span>
                 <Button variant="ghost" size="sm" onClick={logout}>
                   <LogOut className="h-4 w-4" />
