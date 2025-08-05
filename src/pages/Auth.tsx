@@ -58,7 +58,7 @@ const Auth = () => {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Serranito Society</CardTitle>
           <CardDescription>
-            Acceso exclusivo al club privado
+            Arrehúntate con ghente güena
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -75,11 +75,11 @@ const Auth = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Contraseña del Club</Label>
+              <Label htmlFor="password">Contraseña</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Contraseña común"
+                placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
