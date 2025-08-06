@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -28,17 +28,32 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
 
   const form = useForm<PostFormData>({
     defaultValues: {
-      title: editPost?.title || '',
-      content: editPost?.content || ''
+      title: '',
+      content: ''
     }
   });
+
+  // Sincroniza el formulario si se edita un post existente
+  useEffect(() => {
+    if (editPost) {
+      form.reset({
+        title: editPost.title,
+        content: editPost.content
+      });
+    } else {
+      form.reset({
+        title: '',
+        content: ''
+      });
+    }
+  }, [editPost, form]);
 
   const onSubmit = async (data: PostFormData) => {
     if (!user) return;
 
     setIsSubmitting(true);
     try {
-      // Get user ID from users table
+      // Buscar ID del autor
       const { data: userData, error: userError } = await (supabase as any)
         .from('users')
         .select('id')
@@ -49,7 +64,7 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
 
       let result;
       if (editPost) {
-        // Update existing post
+        // Actualizar post existente
         const { data: updatedPost, error } = await (supabase as any)
           .from('posts')
           .update({
@@ -59,11 +74,11 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
           .eq('id', editPost.id)
           .select()
           .single();
-        
+
         if (error) throw error;
         result = updatedPost;
       } else {
-        // Create new post
+        // Crear nuevo post
         const { data: newPost, error } = await (supabase as any)
           .from('posts')
           .insert({
@@ -73,7 +88,7 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
           })
           .select()
           .single();
-        
+
         if (error) throw error;
         result = newPost;
       }
@@ -84,7 +99,7 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
       });
 
       onPostCreated(result);
-      form.reset();
+      form.reset(); // Limpia el formulario después de enviar
     } catch (error) {
       console.error('Error creating post:', error);
       toast({
