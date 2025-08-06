@@ -20,6 +20,7 @@ interface CommentsSectionProps {
 }
 
 const CommentsSection = ({ postId }: CommentsSectionProps) => {
+  const [userUUID, setUserUUID] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -28,6 +29,24 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
   const { user } = useAuth();
 
   useEffect(() => {
+  const fetchUserUUID = async () => {
+    if (!user?.email) return;
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', user.email)
+      .single();
+
+    if (data?.id) {
+      setUserUUID(data.id); // Guarda el UUID correcto
+    } else {
+      console.error('Error obteniendo UUID del usuario:', error);
+    }
+  };
+
+  fetchUserUUID();
+}, [user]);
     fetchComments();
   }, [postId]);
 
@@ -47,7 +66,7 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
   };
 
   const submitComment = async (content: string, parentId: string | null = null) => {
-    if (!user || !content.trim()) return;
+    if (!userUUID || !content.trim()) return;
 
     setLoading(true);
     try {
@@ -56,7 +75,7 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
         .insert({
           content: content.trim(),
           post_id: postId,
-          user_id: user.id,
+          user_id: userUUID,
           parent_id: parentId
         })
         .select()
