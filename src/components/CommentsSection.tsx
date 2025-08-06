@@ -20,39 +20,43 @@ interface CommentsSectionProps {
 }
 
 const CommentsSection = ({ postId }: CommentsSectionProps) => {
-  const [userUUID, setUserUUID] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const [userUUID, setUserUUID] = useState<string | null>(null);
   const { user } = useAuth();
 
+  // Obtener UUID real del usuario (desde la tabla 'users' por email)
   useEffect(() => {
-  const fetchUserUUID = async () => {
-    if (!user?.email) return;
+    const fetchUserUUID = async () => {
+      if (!user?.email) return;
 
-    const { data, error } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', user.email)
-      .single();
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user.email)
+        .single();
 
-    if (data?.id) {
-      setUserUUID(data.id); // Guarda el UUID correcto
-    } else {
-      console.error('Error obteniendo UUID del usuario:', error);
-    }
-  };
+      if (data?.id) {
+        setUserUUID(data.id);
+      } else {
+        console.error('Error obteniendo UUID del usuario:', error);
+      }
+    };
 
-  fetchUserUUID();
-}, [user]);
+    fetchUserUUID();
+  }, [user]);
+
+  // Obtener los comentarios del post
+  useEffect(() => {
     fetchComments();
   }, [postId]);
 
   const fetchComments = async () => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('comments')
         .select('*')
         .eq('post_id', postId)
@@ -70,7 +74,7 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
 
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('comments')
         .insert({
           content: content.trim(),
@@ -82,7 +86,7 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
         .single();
 
       if (error) throw error;
-      
+
       setComments([...comments, data]);
       setNewComment('');
       setReplyContent('');
@@ -103,7 +107,7 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
   };
 
   const parentComments = comments.filter(comment => !comment.parent_id);
-  const getReplies = (commentId: string) => 
+  const getReplies = (commentId: string) =>
     comments.filter(comment => comment.parent_id === commentId);
 
   return (
