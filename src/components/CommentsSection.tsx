@@ -114,7 +114,7 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
     <div className="space-y-4 mt-4">
       <div className="flex items-center gap-2">
         <MessageSquare className="h-4 w-4" />
-        <span className="font-medium">Comentarios ({comments.length})</span>
+        <span className="font-medium">¿Hablamos? ({comments.length})</span>
       </div>
 
       {user && (
@@ -122,7 +122,7 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
           <Textarea
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Escribe un comentario..."
+            placeholder="Anda, di algo!!"
             className="min-h-[80px]"
           />
           <Button 
@@ -167,7 +167,7 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
                   <Textarea
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="Escribe una respuesta..."
+                    placeholder="sigue la conversación!"
                     className="min-h-[60px]"
                   />
                   <div className="flex gap-2">
