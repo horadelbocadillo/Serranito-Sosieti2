@@ -13,6 +13,7 @@ interface CreatePostDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPostCreated: (post: any) => void;
+  editPost?: any;
 }
 
 interface PostFormData {
@@ -20,15 +21,15 @@ interface PostFormData {
   content: string;
 }
 
-const CreatePostDialog = ({ open, onOpenChange, onPostCreated }: CreatePostDialogProps) => {
+const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: CreatePostDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
   const form = useForm<PostFormData>({
     defaultValues: {
-      title: '',
-      content: ''
+      title: editPost?.title || '',
+      content: editPost?.content || ''
     }
   });
 
@@ -46,24 +47,43 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated }: CreatePostDialo
 
       if (userError) throw userError;
 
-      const { data: newPost, error } = await (supabase as any)
-        .from('posts')
-        .insert({
-          title: data.title,
-          content: data.content,
-          author_id: userData.id
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      let result;
+      if (editPost) {
+        // Update existing post
+        const { data: updatedPost, error } = await (supabase as any)
+          .from('posts')
+          .update({
+            title: data.title,
+            content: data.content
+          })
+          .eq('id', editPost.id)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        result = updatedPost;
+      } else {
+        // Create new post
+        const { data: newPost, error } = await (supabase as any)
+          .from('posts')
+          .insert({
+            title: data.title,
+            content: data.content,
+            author_id: userData.id
+          })
+          .select()
+          .single();
+        
+        if (error) throw error;
+        result = newPost;
+      }
 
       toast({
-        title: 'Post creado',
-        description: 'El post se ha publicado correctamente'
+        title: editPost ? 'Post actualizado' : 'Post creado',
+        description: editPost ? 'El post se ha actualizado correctamente' : 'El post se ha publicado correctamente'
       });
 
-      onPostCreated(newPost);
+      onPostCreated(result);
       form.reset();
     } catch (error) {
       console.error('Error creating post:', error);
@@ -81,7 +101,7 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated }: CreatePostDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Crear Nuevo Post</DialogTitle>
+          <DialogTitle>{editPost ? 'Editar Post' : 'Crear Nuevo Post'}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -129,7 +149,10 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated }: CreatePostDialo
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Publicando...' : 'Publicar Post'}
+                {isSubmitting 
+                  ? (editPost ? 'Actualizando...' : 'Publicando...') 
+                  : (editPost ? 'Actualizar Post' : 'Publicar Post')
+                }
               </Button>
             </div>
           </form>

@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import CreatePostDialog from './CreatePostDialog';
+import CommentsSection from './CommentsSection';
+import ReactionsBar from './ReactionsBar';
 
 interface Post {
   id: string;
@@ -18,6 +20,7 @@ const PostsList = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const { isAdmin } = useAuth();
 
   useEffect(() => {
@@ -43,6 +46,27 @@ const PostsList = () => {
   const onPostCreated = (newPost: Post) => {
     setPosts([newPost, ...posts]);
     setShowCreateDialog(false);
+  };
+
+  const onPostUpdated = (updatedPost: Post) => {
+    setPosts(posts.map(post => post.id === updatedPost.id ? updatedPost : post));
+    setEditingPost(null);
+  };
+
+  const deletePost = async (postId: string) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este post?')) return;
+    
+    try {
+      const { error } = await (supabase as any)
+        .from('posts')
+        .delete()
+        .eq('id', postId);
+
+      if (error) throw error;
+      setPosts(posts.filter(post => post.id !== postId));
+    } catch (error) {
+      console.error('Error deleting post:', error);
+    }
   };
 
   if (loading) {
@@ -88,17 +112,41 @@ const PostsList = () => {
           {posts.map((post) => (
             <Card key={post.id}>
               <CardHeader>
-                <CardTitle>{post.title}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(post.created_at).toLocaleDateString('es-ES', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>{post.title}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(post.created_at).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  {isAdmin && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingPost(post)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deletePost(post.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap">{post.content}</p>
+                <div dangerouslySetInnerHTML={{ __html: post.content }} />
+                <ReactionsBar postId={post.id} />
+                <CommentsSection postId={post.id} />
               </CardContent>
             </Card>
           ))}
@@ -109,6 +157,13 @@ const PostsList = () => {
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onPostCreated={onPostCreated}
+      />
+
+      <CreatePostDialog 
+        open={!!editingPost}
+        onOpenChange={(open) => !open && setEditingPost(null)}
+        onPostCreated={onPostUpdated}
+        editPost={editingPost}
       />
     </div>
   );
