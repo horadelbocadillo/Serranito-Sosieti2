@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import DisplayNameModal from '@/components/DisplayNameModal';
 
 interface User {
   email: string;
   id: string;
+  display_name?: string;
 }
 
 interface AuthContextType {
@@ -22,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<{ user: User } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showDisplayNameModal, setShowDisplayNameModal] = useState(false);
 
   useEffect(() => {
     // Check for existing session in localStorage
@@ -32,6 +35,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         setSession({ user: userData });
         setIsAdmin(userData.email === 'horadelbocadillo@gmail.com');
+        
+        // Check if user needs to set display_name
+        if (!userData.display_name) {
+          setShowDisplayNameModal(true);
+        }
       } catch (error) {
         localStorage.removeItem('serranito_user');
       }
@@ -57,10 +65,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: 'Contraseña incorrecta' };
       }
 
-      // Create user object and store in localStorage
+      // Get or create user in database
+      let { data: existingUser, error: fetchError } = await (supabase as any)
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (fetchError && fetchError.code === 'PGRST116') {
+        // User doesn't exist, create new user
+        const { data: newUser, error: createError } = await (supabase as any)
+          .from('users')
+          .insert({
+            email,
+            last_login: new Date().toISOString(),
+            is_admin: email === 'horadelbocadillo@gmail.com'
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          return { error: 'Error al crear el usuario' };
+        }
+        existingUser = newUser;
+      } else if (fetchError) {
+        return { error: 'Error al verificar usuario' };
+      } else {
+        // Update last login
+        await (supabase as any)
+          .from('users')
+          .update({ last_login: new Date().toISOString() })
+          .eq('email', email);
+      }
+
+      // Create user object with database data
       const userData: User = {
         email,
-        id: email // Use email as ID for simplicity
+        id: existingUser.id,
+        display_name: existingUser.display_name
       };
 
       // Store user in localStorage
@@ -69,17 +111,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Update state
       setUser(userData);
       setSession({ user: userData });
-      setIsAdmin(email === 'horadelbocadillo@gmail.com');
+      setIsAdmin(existingUser.is_admin || false);
 
-      // Create or update user record in database
-      await (supabase as any)
-        .from('users')
-        .upsert({
-          email,
-          display_name: email.split('@')[0],
-          last_login: new Date().toISOString(),
-          is_admin: email === 'horadelbocadillo@gmail.com'
-        });
+      // Check if user needs to set display_name
+      if (!existingUser.display_name) {
+        setShowDisplayNameModal(true);
+      }
 
       return { error: null };
     } catch (error) {
@@ -93,6 +130,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setSession(null);
     setIsAdmin(false);
+    setShowDisplayNameModal(false);
+  };
+
+  const handleDisplayNameComplete = (displayName: string) => {
+    if (user) {
+      const updatedUser = { ...user, display_name: displayName };
+      localStorage.setItem('serranito_user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      setSession({ user: updatedUser });
+    }
+    setShowDisplayNameModal(false);
   };
 
   return (
@@ -105,6 +153,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading
     }}>
       {children}
+      {showDisplayNameModal && user && (
+        <DisplayNameModal
+          isOpen={showDisplayNameModal}
+          userEmail={user.email}
+          onComplete={handleDisplayNameComplete}
+        />
+      )}
     </AuthContext.Provider>
   );
 }

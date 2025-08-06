@@ -33,7 +33,7 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
     const fetchUserUUID = async () => {
       if (!user?.email) return;
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('users')
         .select('id')
         .eq('email', user.email)
@@ -56,7 +56,7 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
 
   const fetchComments = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('comments')
         .select('*')
         .eq('post_id', postId)
@@ -74,7 +74,7 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('comments')
         .insert({
           content: content.trim(),
