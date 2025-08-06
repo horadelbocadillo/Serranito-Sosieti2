@@ -69,13 +69,13 @@ const DisplayNameModal = ({ isOpen, userEmail, onComplete }: DisplayNameModalPro
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="displayName">
-              ¿Cómo quieres que te llamen en el Serranito Society?
+              ¿Cómo quieres aparecer en la Serranito Sosieti?
             </Label>
             <Input
               id="displayName"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Tu nombre visible"
+              placeholder="Este nombre saldrá en tus comentarios, piénsatelo"
               required
               disabled={loading}
             />
