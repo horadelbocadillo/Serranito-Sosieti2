@@ -144,7 +144,9 @@ const PostsList = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div dangerouslySetInnerHTML={{ __html: post.content }} />
+                <div 
+                  className="prose prose-neutral max-w-none"
+                  dangerouslySetInnerHTML={{ __html: post.content }} />
                 <ReactionsBar postId={post.id} />
                 <CommentsSection postId={post.id} />
               </CardContent>
