@@ -57,22 +57,35 @@ const ReactionsBar = ({ postId, commentId }: ReactionsBarProps) => {
   };
 
   const toggleReaction = async (emoji: string) => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found');
+      return;
+    }
+
+    console.log('User ID:', user.id);
+    console.log('Toggling reaction:', emoji, 'for post:', postId, 'comment:', commentId);
 
     try {
       const hasReacted = userReactions.has(emoji);
+      console.log('User has already reacted:', hasReacted);
       
       if (hasReacted) {
         // Remove reaction
         const reaction = reactions.find(r => r.emoji === emoji && r.user_id === user.id);
+        console.log('Found existing reaction to delete:', reaction);
+        
         if (reaction) {
           const { error } = await (supabase as any)
             .from('reactions')
             .delete()
             .eq('id', reaction.id);
           
-          if (error) throw error;
+          if (error) {
+            console.error('Delete error:', error);
+            throw error;
+          }
           
+          console.log('Successfully deleted reaction');
           setReactions(reactions.filter(r => r.id !== reaction.id));
           setUserReactions(prev => {
             const newSet = new Set(prev);
@@ -85,9 +98,11 @@ const ReactionsBar = ({ postId, commentId }: ReactionsBarProps) => {
         const newReaction = {
           emoji,
           user_id: user.id,
-          ...(postId && { post_id: postId }),
-          ...(commentId && { comment_id: commentId })
+          post_id: postId || null,
+          comment_id: commentId || null
         };
+
+        console.log('Inserting new reaction:', newReaction);
 
         const { data, error } = await (supabase as any)
           .from('reactions')
@@ -95,8 +110,12 @@ const ReactionsBar = ({ postId, commentId }: ReactionsBarProps) => {
           .select()
           .single();
         
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
         
+        console.log('Successfully inserted reaction:', data);
         setReactions([...reactions, data]);
         setUserReactions(prev => new Set([...prev, emoji]));
       }
