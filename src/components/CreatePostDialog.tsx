@@ -63,23 +63,25 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
       if (userError) throw userError;
 
       let result;
-      if (editPost) {
-        // Actualizar post existente
-        const { data: updatedPost, error } = await (supabase as any)
-          .from('posts')
-          .update({
-            title: data.title,
-            content: data.content
-          })
-          .eq('id', editPost.id)
-          .select('id, title, content, author_id'); // selecciona columnas explícitas
-        
+     if (editPost) {
+  // Actualizar post existente
+  const { data: updatedPosts, error } = await (supabase as any)
+    .from('posts')
+    .update({
+      title: data.title,
+      content: data.content
+    })
+    .eq('id', editPost.id)
+    .select('id, title, content, author_id'); // selecciona columnas explícitas
 
-        if (error) throw error;
-        if (!updatedPosts || updatedPosts.length === 0) {
-    throw new Error('No se encontró ningún post para actualizar'); }
-        result = updatedPosts[0]; // toma la primera fila
-      } 
+  if (error) throw error;
+
+  if (!updatedPosts || updatedPosts.length === 0) {
+    throw new Error('No se encontró ningún post para actualizar');
+  }
+
+  result = updatedPosts[0]; // toma la primera fila
+}
       else {
         // Crear nuevo post
         const { data: newPost, error } = await (supabase as any)
