@@ -80,11 +80,11 @@ const PostsList = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">Posts del Blog</h2>
+        <h2 className="text-3xl font-bold">Nuestras conversaciones secretas</h2>
         {isAdmin && (
           <Button onClick={() => setShowCreateDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Crear Nuevo Post
+            Nueva conversación
           </Button>
         )}
       </div>
@@ -95,14 +95,14 @@ const PostsList = () => {
             <h3 className="text-xl font-semibold mb-2">No hay posts aún</h3>
             <p className="text-muted-foreground mb-4">
               {isAdmin 
-                ? 'Sé el primero en crear un post para la comunidad' 
-                : 'Los posts aparecerán aquí cuando los administradores los publiquen'
+                ? 'Sólo el ADMIN debería ver esto, avísele si lo ves tú' 
+                : 'escríbele a horadelbocadillo@gmail.com'
               }
             </p>
             {isAdmin && (
               <Button onClick={() => setShowCreateDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Crear Primer Post
+                Crear primera conversación
               </Button>
             )}
           </CardContent>
