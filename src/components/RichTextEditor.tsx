@@ -15,19 +15,23 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
   const [fontSize, setFontSize] = useState('16');
 
 useEffect(() => {
-  if (editorRef.current) {
+  if (editorRef.current && value !== undefined) {
     const currentHtml = editorRef.current.innerHTML;
-    if (value !== currentHtml) {
-      editorRef.current.innerHTML = value || '';
+    const cleanValue = value || '';
+    if (cleanValue !== currentHtml) {
+      editorRef.current.innerHTML = cleanValue;
     }
   }
 }, [value]);
 
-  const handleInput = () => {
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-    }
-  };
+ const handleInput = () => {
+  if (editorRef.current) {
+    const content = editorRef.current.innerHTML;
+    // Limpia contenido vacío
+    const cleanContent = content === '<br>' || content === '<div><br></div>' ? '' : content;
+    onChange(cleanContent);
+  }
+};
 
   const execCommand = (command: string, value?: string) => {
   document.execCommand(command, false, value);
