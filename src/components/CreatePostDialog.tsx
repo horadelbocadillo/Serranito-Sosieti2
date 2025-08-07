@@ -57,6 +57,11 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
     if (!user) return;
 
     setIsSubmitting(true);
+    console.log('=== DEBUG EDIT POST ===');
+console.log('editPost:', editPost);
+console.log('form data:', data);
+console.log('user:', user);
+console.log('userData:', userData);
     try {
       const { data: userData, error: userError } = await (supabase as any)
         .from('users')
