@@ -141,24 +141,23 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contenido</FormLabel>
-                  <FormControl>
-                    <RichTextEditor
-                      placeholder="Escribe el contenido del post..."
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+           <FormField
+  control={form.control}
+  name="content"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Contenido</FormLabel>
+      <FormControl>
+        <RichTextEditor
+          placeholder="Escribe el contenido del post..."
+          value={field.value || ''}
+          onChange={(val) => field.onChange(val)}
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
