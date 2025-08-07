@@ -110,7 +110,6 @@ const newCommentWithName = {
 };
 
 setComments([...comments, newCommentWithName]);
-      setComments([...comments, data]);
       setNewComment('');
       setReplyContent('');
       setReplyingTo(null);
@@ -132,6 +131,74 @@ setComments([...comments, newCommentWithName]);
   const parentComments = comments.filter(comment => !comment.parent_id);
   const getReplies = (commentId: string) =>
     comments.filter(comment => comment.parent_id === commentId);
+// Nueva función para renderizar comentarios de forma recursiva
+const renderComment = (comment: Comment, depth: number = 0) => {
+  const replies = getReplies(comment.id);
+  const maxDepth = 5; // Límite de profundidad para evitar hilos infinitos
+  
+  return (
+    <div key={comment.id} className="space-y-2">
+      <Card>
+        <CardContent className="p-3">
+          <div className="flex items-start justify-between mb-2">
+            <span className="text-sm font-medium text-blue-600">
+              {comment.user_display_name}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {new Date(comment.created_at).toLocaleDateString('es-ES')}
+            </span>
+          </div>
+          <p className="text-sm">{comment.content}</p>
+          <div className="flex items-center justify-end mt-2">
+            {user && depth < maxDepth && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+              >
+                <Reply className="h-3 w-3 mr-1" />
+                Responder
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {replyingTo === comment.id && (
+        <div className={`${depth > 0 ? 'ml-4' : 'ml-6'} space-y-2`}>
+          <Textarea
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            placeholder="sigue la conversación!"
+            className="min-h-[60px]"
+          />
+          <div className="flex gap-2">
+            <Button 
+              size="sm"
+              onClick={() => handleSubmitReply(comment.id)}
+              disabled={!replyContent.trim() || loading}
+            >
+              Responder
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setReplyingTo(null)}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {replies.length > 0 && (
+        <div className={`${depth > 0 ? 'ml-4' : 'ml-6'} space-y-2`}>
+          {replies.map((reply) => renderComment(reply, depth + 1))}
+        </div>
+      )}
+    </div>
+  );
+};
 
   return (
     <div className="space-y-4 mt-4">
@@ -159,86 +226,7 @@ setComments([...comments, newCommentWithName]);
       )}
 
       <div className="space-y-3">
-        {parentComments.map((comment) => {
-          const replies = getReplies(comment.id);
-          
-          return (
-            <div key={comment.id} className="space-y-2">
-              <Card>
-                <CardContent className="p-3">
-  <div className="flex items-start justify-between mb-2">
-    <span className="text-sm font-medium text-blue-600">
-      {comment.user_display_name}
-    </span>
-    <span className="text-xs text-muted-foreground">
-      {new Date(comment.created_at).toLocaleDateString('es-ES')}
-    </span>
-  </div>
-  <p className="text-sm">{comment.content}</p>
-  <div className="flex items-center justify-end mt-2">
-                    {user && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                      >
-                        <Reply className="h-3 w-3 mr-1" />
-                        Responder
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {replyingTo === comment.id && (
-                <div className="ml-6 space-y-2">
-                  <Textarea
-                    value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="sigue la conversación!"
-                    className="min-h-[60px]"
-                  />
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm"
-                      onClick={() => handleSubmitReply(comment.id)}
-                      disabled={!replyContent.trim() || loading}
-                    >
-                      Responder
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setReplyingTo(null)}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {replies.length > 0 && (
-                <div className="ml-6 space-y-2">
-                  {replies.map((reply) => (
-                    <Card key={reply.id}>
-                      <CardContent className="p-3">
-  <div className="flex items-start justify-between mb-2">
-    <span className="text-sm font-medium text-blue-600">
-      {reply.user_display_name}
-    </span>
-    <span className="text-xs text-muted-foreground">
-      {new Date(reply.created_at).toLocaleDateString('es-ES')}
-    </span>
-  </div>
-  <p className="text-sm">{reply.content}</p>
-</CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {parentComments.map((comment) => renderComment(comment, 0))}
       </div>
     </div>
   );
