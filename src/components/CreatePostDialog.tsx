@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,10 +18,13 @@ interface CreatePostDialogProps {
   editPost?: any;
 }
 
-interface PostFormData {
-  title: string;
-  content: string;
-}
+// Zod schema de validación
+const postSchema = z.object({
+  title: z.string().min(1, 'El título es obligatorio'),
+  content: z.string().min(1, 'El contenido es obligatorio'),
+});
+
+type PostFormData = z.infer<typeof postSchema>;
 
 const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: CreatePostDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,13 +32,13 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
   const { toast } = useToast();
 
   const form = useForm<PostFormData>({
+    resolver: zodResolver(postSchema),
     defaultValues: {
       title: '',
       content: ''
     }
   });
 
-  // Sincroniza el formulario si se edita un post existente
   useEffect(() => {
     if (editPost) {
       form.reset({
@@ -53,7 +58,6 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
 
     setIsSubmitting(true);
     try {
-      // Buscar ID del autor
       const { data: userData, error: userError } = await (supabase as any)
         .from('users')
         .select('id')
@@ -63,27 +67,24 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
       if (userError) throw userError;
 
       let result;
-     if (editPost) {
-  // Actualizar post existente
-  const { data: updatedPosts, error } = await (supabase as any)
-    .from('posts')
-    .update({
-      title: data.title,
-      content: data.content
-    })
-    .eq('id', editPost.id)
-    .select('id, title, content, author_id'); // selecciona columnas explícitas
 
-  if (error) throw error;
+      if (editPost) {
+        const { data: updatedPosts, error } = await (supabase as any)
+          .from('posts')
+          .update({
+            title: data.title,
+            content: data.content
+          })
+          .eq('id', editPost.id)
+          .select('id, title, content, author_id');
 
-  if (!updatedPosts || updatedPosts.length === 0) {
-    throw new Error('No se encontró ningún post para actualizar');
-  }
+        if (error) throw error;
+        if (!updatedPosts || updatedPosts.length === 0) {
+          throw new Error('No se encontró ningún post para actualizar');
+        }
 
-  result = updatedPosts[0]; // toma la primera fila
-}
-      else {
-        // Crear nuevo post
+        result = updatedPosts[0];
+      } else {
         const { data: newPost, error } = await (supabase as any)
           .from('posts')
           .insert({
@@ -104,12 +105,12 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
       });
 
       onPostCreated(result);
-      form.reset(); // Limpia el formulario después de enviar
+      form.reset();
     } catch (error) {
-      console.error('Error creating post:', error);
+      console.error('Error creando/actualizando post:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo crear el post',
+        description: 'No se pudo guardar el post',
         variant: 'destructive'
       });
     } finally {
@@ -129,7 +130,6 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
             <FormField
               control={form.control}
               name="title"
-              rules={{ required: 'El título es obligatorio' }}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Título</FormLabel>
@@ -144,12 +144,11 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
             <FormField
               control={form.control}
               name="content"
-              rules={{ required: 'El contenido es obligatorio' }}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Contenido</FormLabel>
                   <FormControl>
-                    <RichTextEditor 
+                    <RichTextEditor
                       placeholder="Escribe el contenido del post..."
                       value={field.value}
                       onChange={field.onChange}
@@ -161,18 +160,17 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
             />
 
             <div className="flex justify-end gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => onOpenChange(false)}
               >
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting 
-                  ? (editPost ? 'Actualizando...' : 'Publicando...') 
-                  : (editPost ? 'Actualizar Post' : 'Publicar Post')
-                }
+                {isSubmitting
+                  ? (editPost ? 'Actualizando...' : 'Publicando...')
+                  : (editPost ? 'Actualizar Post' : 'Publicar Post')}
               </Button>
             </div>
           </form>
