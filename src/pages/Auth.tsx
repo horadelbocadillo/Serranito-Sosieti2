@@ -56,7 +56,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Serranito Society</CardTitle>
+          <CardTitle className="text-2xl font-bold">Serranito Sosieti</CardTitle>
           <CardDescription>
             Arrehúntate con ghente güena
           </CardDescription>
@@ -75,11 +75,11 @@ const Auth = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
+              <Label htmlFor="password">Clave</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Contraseña"
+                placeholder="Clave secreta que te he dado"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -91,7 +91,7 @@ const Auth = () => {
               className="w-full" 
               disabled={isLoading}
             >
-              {isLoading ? 'Iniciando sesión...' : 'Entrar al Club'}
+              {isLoading ? 'Iniciando sesión...' : 'Entrar a la Sosieti'}
             </Button>
           </form>
         </CardContent>
