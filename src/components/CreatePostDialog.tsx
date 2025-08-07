@@ -57,11 +57,12 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
     if (!user) return;
 
     setIsSubmitting(true);
+    
     console.log('=== DEBUG EDIT POST ===');
-console.log('editPost:', editPost);
-console.log('form data:', data);
-console.log('user:', user);
-console.log('userData:', userData);
+    console.log('editPost:', editPost);
+    console.log('form data:', data);
+    console.log('user:', user);
+
     try {
       const { data: userData, error: userError } = await (supabase as any)
         .from('users')
@@ -70,32 +71,32 @@ console.log('userData:', userData);
         .single();
 
       if (userError) throw userError;
+      console.log('userData:', userData);
 
       let result;
 
-     if (editPost) {
-  const { data: updatedPost, error } = await (supabase as any)
-    .from('posts')
-    .update({
-      title: data.title,
-      content: data.content,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', editPost.id)
-    .select('*')
-    .single();
+      if (editPost) {
+        // EDITAR POST EXISTENTE
+        const { data: updatedPost, error } = await (supabase as any)
+          .from('posts')
+          .update({
+            title: data.title,
+            content: data.content,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editPost.id)
+          .select('*')
+          .single();
 
-  if (error) {
-    console.error('Error actualizando post:', error);
-    throw error;
-  }
+        if (error) {
+          console.error('Error actualizando post:', error);
+          throw error;
+        }
 
-  result = updatedPost;
-  console.log('Post actualizado:', result);
-}
-
-        result = updatedPosts[0];
+        result = updatedPost;
+        console.log('Post actualizado:', result);
       } else {
+        // CREAR POST NUEVO
         const { data: newPost, error } = await (supabase as any)
           .from('posts')
           .insert({
@@ -108,6 +109,7 @@ console.log('userData:', userData);
 
         if (error) throw error;
         result = newPost;
+        console.log('Post creado:', result);
       }
 
       toast({
@@ -152,23 +154,24 @@ console.log('userData:', userData);
               )}
             />
 
-           <FormField
-  control={form.control}
-  name="content"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Contenido</FormLabel>
-      <FormControl>
-        <RichTextEditor
-          placeholder="Escribe el contenido del post..."
-          value={field.value || ''}
-          onChange={(val) => field.onChange(val)}
-        />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+            <FormField
+              control={form.control}
+              name="content"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contenido</FormLabel>
+                  <FormControl>
+                    <RichTextEditor
+                      placeholder="Escribe el contenido del post..."
+                      value={field.value || ''}
+                      onChange={(val) => field.onChange(val)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
