@@ -73,7 +73,8 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
           .from('posts')
           .update({
             title: data.title,
-            content: data.content
+            content: data.content,
+            author_id: userData.id
           })
           .eq('id', editPost.id)
           .select('id, title, content, author_id');
