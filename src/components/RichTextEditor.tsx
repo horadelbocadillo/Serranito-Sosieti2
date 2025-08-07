@@ -14,11 +14,14 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
   const editorRef = useRef<HTMLDivElement>(null);
   const [fontSize, setFontSize] = useState('16');
 
-  useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value;
+useEffect(() => {
+  if (editorRef.current) {
+    const currentHtml = editorRef.current.innerHTML;
+    if (value !== currentHtml) {
+      editorRef.current.innerHTML = value || '';
     }
-  }, [value]);
+  }
+}, [value]);
 
   const handleInput = () => {
     if (editorRef.current) {
@@ -27,10 +30,12 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
   };
 
   const execCommand = (command: string, value?: string) => {
-    document.execCommand(command, false, value);
-    editorRef.current?.focus();
-    handleInput();
-  };
+  document.execCommand(command, false, value);
+  // actualiza manualmente el contenido
+  setTimeout(() => {
+    handleInput(); // Actualiza el formulario con el nuevo HTML
+  }, 0);
+};
 
   const handleFontSizeChange = (size: string) => {
     setFontSize(size);
