@@ -13,6 +13,8 @@ interface Comment {
   user_id: string;
   parent_id: string | null;
   post_id: string;
+  // Añadir información del usuario
+  user_display_name?: string;
 }
 
 interface CommentsSectionProps {
@@ -54,20 +56,31 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
     fetchComments();
   }, [postId]);
 
-  const fetchComments = async () => {
-    try {
-      const { data, error } = await (supabase as any)
-        .from('comments')
-        .select('*')
-        .eq('post_id', postId)
-        .order('created_at', { ascending: true });
+const fetchComments = async () => {
+  try {
+    // Hacer JOIN con la tabla users para obtener display_name
+    const { data, error } = await (supabase as any)
+      .from('comments')
+      .select(`
+        *,
+        users!inner(display_name)
+      `)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      setComments(data || []);
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-    }
-  };
+    if (error) throw error;
+
+    // Mapear los datos para incluir display_name en el objeto comment
+    const commentsWithNames = (data || []).map(comment => ({
+      ...comment,
+      user_display_name: comment.users?.display_name || 'Usuario sin nombre'
+    }));
+
+    setComments(commentsWithNames);
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+  }
+};
 
   const submitComment = async (content: string, parentId: string | null = null) => {
     if (!userUUID || !content.trim()) return;
@@ -75,18 +88,28 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
     setLoading(true);
     try {
       const { data, error } = await (supabase as any)
-        .from('comments')
-        .insert({
-          content: content.trim(),
-          post_id: postId,
-          user_id: userUUID,
-          parent_id: parentId
-        })
-        .select()
-        .single();
+  .from('comments')
+  .insert({
+    content: content.trim(),
+    post_id: postId,
+    user_id: userUUID,
+    parent_id: parentId
+  })
+  .select(`
+    *,
+    users!inner(display_name)
+  `)
+  .single();
 
-      if (error) throw error;
+if (error) throw error;
 
+// Añadir el nuevo comentario con el display_name
+const newCommentWithName = {
+  ...data,
+  user_display_name: data.users?.display_name || 'Usuario sin nombre'
+};
+
+setComments([...comments, newCommentWithName]);
       setComments([...comments, data]);
       setNewComment('');
       setReplyContent('');
@@ -143,11 +166,16 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
             <div key={comment.id} className="space-y-2">
               <Card>
                 <CardContent className="p-3">
-                  <p className="text-sm">{comment.content}</p>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(comment.created_at).toLocaleDateString('es-ES')}
-                    </span>
+  <div className="flex items-start justify-between mb-2">
+    <span className="text-sm font-medium text-blue-600">
+      {comment.user_display_name}
+    </span>
+    <span className="text-xs text-muted-foreground">
+      {new Date(comment.created_at).toLocaleDateString('es-ES')}
+    </span>
+  </div>
+  <p className="text-sm">{comment.content}</p>
+  <div className="flex items-center justify-end mt-2">
                     {user && (
                       <Button
                         variant="ghost"
@@ -194,11 +222,16 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
                   {replies.map((reply) => (
                     <Card key={reply.id}>
                       <CardContent className="p-3">
-                        <p className="text-sm">{reply.content}</p>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(reply.created_at).toLocaleDateString('es-ES')}
-                        </span>
-                      </CardContent>
+  <div className="flex items-start justify-between mb-2">
+    <span className="text-sm font-medium text-blue-600">
+      {reply.user_display_name}
+    </span>
+    <span className="text-xs text-muted-foreground">
+      {new Date(reply.created_at).toLocaleDateString('es-ES')}
+    </span>
+  </div>
+  <p className="text-sm">{reply.content}</p>
+</CardContent>
                     </Card>
                   ))}
                 </div>
