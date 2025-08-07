@@ -68,21 +68,26 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
 
       let result;
 
-      if (editPost) {
-        const { data: updatedPosts, error } = await (supabase as any)
-          .from('posts')
-          .update({
-            title: data.title,
-            content: data.content,
-            author_id: userData.id
-          })
-          .eq('id', editPost.id)
-          .select('id, title, content, author_id');
+     if (editPost) {
+  const { data: updatedPost, error } = await (supabase as any)
+    .from('posts')
+    .update({
+      title: data.title,
+      content: data.content,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', editPost.id)
+    .select('*')
+    .single();
 
-        if (error) throw error;
-        if (!updatedPosts || updatedPosts.length === 0) {
-          throw new Error('No se encontró ningún post para actualizar');
-        }
+  if (error) {
+    console.error('Error actualizando post:', error);
+    throw error;
+  }
+
+  result = updatedPost;
+  console.log('Post actualizado:', result);
+}
 
         result = updatedPosts[0];
       } else {
