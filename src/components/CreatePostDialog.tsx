@@ -54,7 +54,14 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
   }, [editPost, form]);
 
   const onSubmit = async (data: PostFormData) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'Debes estar autenticado para crear/editar posts',
+        variant: 'destructive'
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     
@@ -64,20 +71,13 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
     console.log('user:', user);
 
     try {
-      const { data: userData, error: userError } = await (supabase as any)
-        .from('users')
-        .select('id')
-        .eq('email', user.email)
-        .single();
-
-      if (userError) throw userError;
-      console.log('userData:', userData);
-
       let result;
 
       if (editPost) {
-        // EDITAR POST EXISTENTE
-        const { data: updatedPost, error } = await (supabase as any)
+        // EDITAR POST EXISTENTE - No necesitamos buscar el usuario
+        console.log('Editando post con ID:', editPost.id);
+        
+        const { data: updatedPost, error } = await supabase
           .from('posts')
           .update({
             title: data.title,
@@ -96,18 +96,61 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
         result = updatedPost;
         console.log('Post actualizado:', result);
       } else {
-        // CREAR POST NUEVO
-        const { data: newPost, error } = await (supabase as any)
+        // CREAR POST NUEVO - Buscar usuario solo para creación
+        console.log('Buscando usuario con email:', user.email);
+        
+        // Opción 1: Usar el ID directamente del usuario autenticado si está disponible
+        let userId = user.id; // Si el objeto user ya tiene el ID
+
+        // Si no tienes el ID en el objeto user, entonces busca en la tabla users
+        if (!userId) {
+          console.log('Buscando usuario admin con email:', user.email);
+          
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id, is_admin')
+            .eq('email', user.email)
+            .single(); // Usamos single porque sabemos que el admin existe
+
+          console.log('Resultado búsqueda usuario:', userData, userError);
+
+          if (userError) {
+            console.error('Error buscando usuario:', userError);
+            if (userError.code === 'PGRST116') {
+              throw new Error('Usuario admin no encontrado. Verifica las políticas RLS.');
+            }
+            throw new Error(`Error al buscar usuario: ${userError.message}`);
+          }
+
+          if (!userData) {
+            throw new Error('Usuario no encontrado en la base de datos.');
+          }
+
+          if (!userData.is_admin) {
+            throw new Error('Solo los administradores pueden crear posts.');
+          }
+
+          userId = userData.id;
+          console.log('Usuario admin encontrado con ID:', userId);
+        }
+
+        console.log('Creando post con userId:', userId);
+
+        const { data: newPost, error } = await supabase
           .from('posts')
           .insert({
             title: data.title,
             content: data.content,
-            author_id: userData.id
+            author_id: userId
           })
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error creando post:', error);
+          throw error;
+        }
+        
         result = newPost;
         console.log('Post creado:', result);
       }
@@ -119,11 +162,22 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
 
       onPostCreated(result);
       form.reset();
-    } catch (error) {
+      onOpenChange(false); // Cerrar el diálogo después del éxito
+      
+    } catch (error: any) {
       console.error('Error creando/actualizando post:', error);
+      
+      let errorMessage = 'No se pudo guardar el post';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.details) {
+        errorMessage = error.details;
+      }
+      
       toast({
         title: 'Error',
-        description: 'No se pudo guardar el post',
+        description: errorMessage,
         variant: 'destructive'
       });
     } finally {
