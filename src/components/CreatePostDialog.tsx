@@ -74,7 +74,7 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
       let result;
 
       if (editPost) {
-        // EDITAR POST EXISTENTE - No necesitamos buscar el usuario
+        // EDITAR POST EXISTENTE - Solo admin puede hacerlo (controlado por RLS)
         console.log('Editando post con ID:', editPost.id);
         
         const { data: updatedPost, error } = await supabase
@@ -90,64 +90,45 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
 
         if (error) {
           console.error('Error actualizando post:', error);
+          if (error.code === 'PGRST116') {
+            throw new Error('No tienes permisos para editar este post.');
+          }
           throw error;
         }
 
         result = updatedPost;
         console.log('Post actualizado:', result);
       } else {
-        // CREAR POST NUEVO - Buscar usuario solo para creación
-        console.log('Buscando usuario con email:', user.email);
-        
-        // Opción 1: Usar el ID directamente del usuario autenticado si está disponible
-        let userId = user.id; // Si el objeto user ya tiene el ID
+        // CREAR POST NUEVO - Solo admin puede hacerlo (controlado por RLS)
+        console.log('Creando nuevo post');
 
-        // Si no tienes el ID en el objeto user, entonces busca en la tabla users
-        if (!userId) {
-          console.log('Buscando usuario admin con email:', user.email);
-          
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id, is_admin')
-            .eq('email', user.email)
-            .single(); // Usamos single porque sabemos que el admin existe
+        // Primero obtenemos nuestro user ID
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', user.email)
+          .single();
 
-          console.log('Resultado búsqueda usuario:', userData, userError);
-
-          if (userError) {
-            console.error('Error buscando usuario:', userError);
-            if (userError.code === 'PGRST116') {
-              throw new Error('Usuario admin no encontrado. Verifica las políticas RLS.');
-            }
-            throw new Error(`Error al buscar usuario: ${userError.message}`);
-          }
-
-          if (!userData) {
-            throw new Error('Usuario no encontrado en la base de datos.');
-          }
-
-          if (!userData.is_admin) {
-            throw new Error('Solo los administradores pueden crear posts.');
-          }
-
-          userId = userData.id;
-          console.log('Usuario admin encontrado con ID:', userId);
+        if (userError || !userData) {
+          console.error('Error obteniendo datos del usuario:', userError);
+          throw new Error('No se pudo obtener la información del usuario.');
         }
-
-        console.log('Creando post con userId:', userId);
 
         const { data: newPost, error } = await supabase
           .from('posts')
           .insert({
             title: data.title,
             content: data.content,
-            author_id: userId
+            author_id: userData.id
           })
-          .select()
+          .select('*')
           .single();
 
         if (error) {
           console.error('Error creando post:', error);
+          if (error.code === '42501') {
+            throw new Error('No tienes permisos para crear posts.');
+          }
           throw error;
         }
         
