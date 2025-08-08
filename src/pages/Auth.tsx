@@ -75,7 +75,7 @@ const Auth = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Clave</Label>
+              <Label htmlFor="password">Santo y seña </Label>
               <Input
                 id="password"
                 type="password"
