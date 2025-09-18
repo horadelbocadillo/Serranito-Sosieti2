@@ -286,45 +286,68 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Fecha y hora de inicio *</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP p")
-                                ) : (
-                                  <span>Selecciona fecha</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={(date) => {
-                                if (date) {
-                                  const newDate = new Date(date);
-                                  newDate.setHours(new Date().getHours());
-                                  newDate.setMinutes(new Date().getMinutes());
+                        <div className="space-y-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Selecciona fecha</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={(date) => {
+                                  if (date) {
+                                    const currentValue = field.value || new Date();
+                                    const newDate = new Date(date);
+                                    newDate.setHours(currentValue.getHours());
+                                    newDate.setMinutes(currentValue.getMinutes());
+                                    field.onChange(newDate);
+                                  }
+                                }}
+                                disabled={(date) =>
+                                  date < new Date(new Date().setHours(0, 0, 0, 0))
+                                }
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <div className="flex gap-2">
+                            <Input
+                              type="time"
+                              value={field.value ? format(field.value, "HH:mm") : ""}
+                              onChange={(e) => {
+                                if (field.value && e.target.value) {
+                                  const [hours, minutes] = e.target.value.split(':');
+                                  const newDate = new Date(field.value);
+                                  newDate.setHours(parseInt(hours), parseInt(minutes));
+                                  field.onChange(newDate);
+                                } else if (e.target.value) {
+                                  const [hours, minutes] = e.target.value.split(':');
+                                  const newDate = new Date();
+                                  newDate.setHours(parseInt(hours), parseInt(minutes));
                                   field.onChange(newDate);
                                 }
                               }}
-                              disabled={(date) =>
-                                date < new Date(new Date().setHours(0, 0, 0, 0))
-                              }
-                              initialFocus
-                              className={cn("p-3 pointer-events-auto")}
+                              className="flex-1"
                             />
-                          </PopoverContent>
-                        </Popover>
+                          </div>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -336,45 +359,68 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Fecha y hora de fin</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP p")
-                                ) : (
-                                  <span>Selecciona fecha</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={(date) => {
-                                if (date) {
-                                  const newDate = new Date(date);
-                                  newDate.setHours(new Date().getHours() + 1);
-                                  newDate.setMinutes(new Date().getMinutes());
+                        <div className="space-y-2">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Selecciona fecha</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={(date) => {
+                                  if (date) {
+                                    const currentValue = field.value || new Date();
+                                    const newDate = new Date(date);
+                                    newDate.setHours(currentValue.getHours());
+                                    newDate.setMinutes(currentValue.getMinutes());
+                                    field.onChange(newDate);
+                                  }
+                                }}
+                                disabled={(date) =>
+                                  date < new Date(new Date().setHours(0, 0, 0, 0))
+                                }
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <div className="flex gap-2">
+                            <Input
+                              type="time"
+                              value={field.value ? format(field.value, "HH:mm") : ""}
+                              onChange={(e) => {
+                                if (field.value && e.target.value) {
+                                  const [hours, minutes] = e.target.value.split(':');
+                                  const newDate = new Date(field.value);
+                                  newDate.setHours(parseInt(hours), parseInt(minutes));
+                                  field.onChange(newDate);
+                                } else if (e.target.value) {
+                                  const [hours, minutes] = e.target.value.split(':');
+                                  const newDate = new Date();
+                                  newDate.setHours(parseInt(hours), parseInt(minutes));
                                   field.onChange(newDate);
                                 }
                               }}
-                              disabled={(date) =>
-                                date < new Date(new Date().setHours(0, 0, 0, 0))
-                              }
-                              initialFocus
-                              className={cn("p-3 pointer-events-auto")}
+                              className="flex-1"
                             />
-                          </PopoverContent>
-                        </Popover>
+                          </div>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
