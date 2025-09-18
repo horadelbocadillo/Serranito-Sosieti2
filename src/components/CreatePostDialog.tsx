@@ -5,11 +5,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import RichTextEditor from './RichTextEditor';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface CreatePostDialogProps {
   open: boolean;
@@ -22,6 +29,19 @@ interface CreatePostDialogProps {
 const postSchema = z.object({
   title: z.string().min(1, 'El título es obligatorio'),
   content: z.string().min(1, 'El contenido es obligatorio'),
+  is_event: z.boolean().default(false),
+  event_date: z.date().optional(),
+  event_end_date: z.date().optional(),
+  event_location: z.string().optional(),
+  event_description: z.string().optional(),
+}).refine((data) => {
+  if (data.is_event && !data.event_date) {
+    return false;
+  }
+  return true;
+}, {
+  message: "La fecha del evento es obligatoria cuando se marca como evento",
+  path: ["event_date"],
 });
 
 type PostFormData = z.infer<typeof postSchema>;
@@ -35,20 +55,37 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
     resolver: zodResolver(postSchema),
     defaultValues: {
       title: '',
-      content: ''
+      content: '',
+      is_event: false,
+      event_date: undefined,
+      event_end_date: undefined,
+      event_location: '',
+      event_description: ''
     }
   });
+
+  const watchIsEvent = form.watch("is_event");
 
   useEffect(() => {
     if (editPost) {
       form.reset({
         title: editPost.title,
-        content: editPost.content
+        content: editPost.content,
+        is_event: editPost.is_event || false,
+        event_date: editPost.event_date ? new Date(editPost.event_date) : undefined,
+        event_end_date: editPost.event_end_date ? new Date(editPost.event_end_date) : undefined,
+        event_location: editPost.event_location || '',
+        event_description: editPost.event_description || ''
       });
     } else {
       form.reset({
         title: '',
-        content: ''
+        content: '',
+        is_event: false,
+        event_date: undefined,
+        event_end_date: undefined,
+        event_location: '',
+        event_description: ''
       });
     }
   }, [editPost, form]);
@@ -82,6 +119,11 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
           .update({
             title: data.title,
             content: data.content,
+            is_event: data.is_event,
+            event_date: data.event_date?.toISOString(),
+            event_end_date: data.event_end_date?.toISOString(),
+            event_location: data.event_location,
+            event_description: data.event_description,
             updated_at: new Date().toISOString()
           })
           .eq('id', editPost.id)
@@ -119,7 +161,12 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
           .insert({
             title: data.title,
             content: data.content,
-            author_id: userData.id
+            author_id: userData.id,
+            is_event: data.is_event,
+            event_date: data.event_date?.toISOString(),
+            event_end_date: data.event_end_date?.toISOString(),
+            event_location: data.event_location,
+            event_description: data.event_description
           })
           .select('*')
           .single();
@@ -206,6 +253,166 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="is_event"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Añade la quedada a tu agenda
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Marca esta opción si quieres crear un evento de calendario
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {watchIsEvent && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="event_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Fecha y hora de inicio *</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP p")
+                                ) : (
+                                  <span>Selecciona fecha</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const newDate = new Date(date);
+                                  newDate.setHours(new Date().getHours());
+                                  newDate.setMinutes(new Date().getMinutes());
+                                  field.onChange(newDate);
+                                }
+                              }}
+                              disabled={(date) =>
+                                date < new Date(new Date().setHours(0, 0, 0, 0))
+                              }
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="event_end_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Fecha y hora de fin</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP p")
+                                ) : (
+                                  <span>Selecciona fecha</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const newDate = new Date(date);
+                                  newDate.setHours(new Date().getHours() + 1);
+                                  newDate.setMinutes(new Date().getMinutes());
+                                  field.onChange(newDate);
+                                }
+                              }}
+                              disabled={(date) =>
+                                date < new Date(new Date().setHours(0, 0, 0, 0))
+                              }
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="event_location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ubicación</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ej: Casa de Pedro, Plaza Mayor..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="event_description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción del evento</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Descripción adicional del evento..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
             
             <div className="flex justify-end gap-2">
               <Button

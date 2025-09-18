@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Calendar, MapPin, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import CreatePostDialog from './CreatePostDialog';
 import CommentsSection from './CommentsSection';
 import ReactionsBar from './ReactionsBar';
+import { downloadICS } from '@/lib/calendar';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface Post {
   id: string;
@@ -14,6 +17,11 @@ interface Post {
   content: string;
   created_at: string;
   author_id: string;
+  is_event?: boolean;
+  event_date?: string;
+  event_end_date?: string;
+  event_location?: string;
+  event_description?: string;
 }
 
 const PostsList = () => {
@@ -67,6 +75,22 @@ const PostsList = () => {
     } catch (error) {
       console.error('Error deleting post:', error);
     }
+  };
+
+  const handleAddToCalendar = (post: Post) => {
+    if (!post.is_event || !post.event_date) return;
+
+    const startDate = new Date(post.event_date);
+    const endDate = post.event_end_date ? new Date(post.event_end_date) : new Date(startDate.getTime() + 60 * 60 * 1000);
+
+    downloadICS({
+      title: post.title,
+      description: post.event_description || post.content.replace(/<[^>]*>/g, ''), // Strip HTML tags
+      location: post.event_location,
+      startDate,
+      endDate,
+      uid: `post-${post.id}@app.com`
+    });
   };
 
   if (loading) {
@@ -147,6 +171,43 @@ const PostsList = () => {
                 <div 
                   className="prose prose-neutral max-w-none"
                   dangerouslySetInnerHTML={{ __html: post.content }} />
+                
+                {post.is_event && post.event_date && (
+                  <div className="mt-4 p-4 bg-muted rounded-lg space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Calendar className="h-4 w-4" />
+                      Evento
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4" />
+                      {format(new Date(post.event_date), "PPP 'a las' p", { locale: es })}
+                      {post.event_end_date && (
+                        <span> - {format(new Date(post.event_end_date), "p", { locale: es })}</span>
+                      )}
+                    </div>
+                    {post.event_location && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <MapPin className="h-4 w-4" />
+                        {post.event_location}
+                      </div>
+                    )}
+                    {post.event_description && (
+                      <p className="text-sm text-muted-foreground">
+                        {post.event_description}
+                      </p>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddToCalendar(post)}
+                      className="mt-2"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Añadir a calendario
+                    </Button>
+                  </div>
+                )}
+                
                 <ReactionsBar postId={post.id} />
                 <CommentsSection postId={post.id} />
               </CardContent>
