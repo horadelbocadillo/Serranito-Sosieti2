@@ -50,23 +50,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       // Get the common password from config
-      const { data: configData, error: configError } = await (supabase as any)
+      const { data: configData, error: configError } = await supabase
         .from('config')
         .select('value')
         .eq('key', 'common_password')
         .single();
 
       if (configError || !configData) {
+        console.error('Config error:', configError);
         return { error: 'Error al verificar la configuración' };
       }
 
       // Check if the provided password matches the common password
-      if (password !== (configData as any).value) {
+      if (password !== configData.value) {
         return { error: 'Contraseña incorrecta' };
       }
 
       // Get or create user in database
-      let { data: existingUser, error: fetchError } = await (supabase as any)
+      let { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
         .eq('email', email)
@@ -74,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (fetchError && fetchError.code === 'PGRST116') {
         // User doesn't exist, create new user
-        const { data: newUser, error: createError } = await (supabase as any)
+        const { data: newUser, error: createError } = await supabase
           .from('users')
           .insert({
             email,
@@ -85,14 +86,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (createError) {
+          console.error('Create user error:', createError);
           return { error: 'Error al crear el usuario' };
         }
         existingUser = newUser;
       } else if (fetchError) {
+        console.error('Fetch user error:', fetchError);
         return { error: 'Error al verificar usuario' };
       } else {
         // Update last login
-        await (supabase as any)
+        await supabase
           .from('users')
           .update({ last_login: new Date().toISOString() })
           .eq('email', email);
