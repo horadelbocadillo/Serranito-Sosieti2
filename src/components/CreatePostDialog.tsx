@@ -111,75 +111,65 @@ const CreatePostDialog = ({ open, onOpenChange, onPostCreated, editPost }: Creat
       let result;
 
       if (editPost) {
-        // EDITAR POST EXISTENTE - Solo admin puede hacerlo (controlado por RLS)
+        // Editar vía Edge Function con validación de admin
         console.log('Editando post con ID:', editPost.id);
-        
-        const { data: updatedPost, error } = await supabase
-          .from('posts')
-          .update({
+
+        const res = await fetch('https://jrvwprlhtmlmokzynezh.supabase.co/functions/v1/admin-posts', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-email': user.email,
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpydndwcmxodG1sbW9renluZXpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMDc1MjksImV4cCI6MjA2OTg4MzUyOX0.04knlB4p2OIA48-KBnZThoS6UbzL7gwCu3r232B7i9w'
+          },
+          body: JSON.stringify({
+            id: editPost.id,
             title: data.title,
             content: data.content,
             is_event: data.is_event,
-            event_date: data.event_date?.toISOString(),
-            event_end_date: data.event_end_date?.toISOString(),
-            event_location: data.event_location,
-            event_description: data.event_description,
-            updated_at: new Date().toISOString()
+            event_date: data.event_date?.toISOString() ?? null,
+            event_end_date: data.event_end_date?.toISOString() ?? null,
+            event_location: data.event_location ?? null,
+            event_description: data.event_description ?? null,
           })
-          .eq('id', editPost.id)
-          .select('*')
-          .single();
+        });
 
-        if (error) {
-          console.error('Error actualizando post:', error);
-          if (error.code === 'PGRST116') {
-            throw new Error('No tienes permisos para editar este post.');
-          }
-          throw error;
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const message = payload?.error ?? 'No tienes permisos para editar este post.';
+          throw new Error(message);
         }
 
-        result = updatedPost;
+        result = payload?.data ?? payload;
         console.log('Post actualizado:', result);
       } else {
-        // CREAR POST NUEVO - Solo admin puede hacerlo (controlado por RLS)
+        // CREAR POST NUEVO mediante Edge Function con validación de admin
         console.log('Creando nuevo post');
 
-        // Primero obtenemos nuestro user ID
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('email', user.email)
-          .single();
-
-        if (userError || !userData) {
-          console.error('Error obteniendo datos del usuario:', userError);
-          throw new Error('No se pudo obtener la información del usuario.');
-        }
-
-        const { data: newPost, error } = await supabase
-          .from('posts')
-          .insert({
+        const res = await fetch('https://jrvwprlhtmlmokzynezh.supabase.co/functions/v1/admin-posts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-email': user.email,
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpydndwcmxodG1sbW9renluZXpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMDc1MjksImV4cCI6MjA2OTg4MzUyOX0.04knlB4p2OIA48-KBnZThoS6UbzL7gwCu3r232B7i9w'
+          },
+          body: JSON.stringify({
             title: data.title,
             content: data.content,
-            author_id: userData.id,
             is_event: data.is_event,
-            event_date: data.event_date?.toISOString(),
-            event_end_date: data.event_end_date?.toISOString(),
-            event_location: data.event_location,
-            event_description: data.event_description
+            event_date: data.event_date?.toISOString() ?? null,
+            event_end_date: data.event_end_date?.toISOString() ?? null,
+            event_location: data.event_location ?? null,
+            event_description: data.event_description ?? null,
           })
-          .select('*')
-          .single();
+        });
 
-        if (error) {
-          console.error('Error creando post:', error);
-          if (error.code === '42501') {
-            throw new Error('No tienes permisos para crear posts.');
-          }
-          throw error;
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const message = payload?.error ?? 'No tienes permisos para crear posts.';
+          throw new Error(message);
         }
-        
-        result = newPost;
+
+        result = payload?.data ?? payload;
         console.log('Post creado:', result);
       }
 
