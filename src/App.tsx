@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AdminPanel from "./pages/AdminPanel";
 import UsersPanel from "./pages/UsersPanel";
+import SerranitoQuiz from "./pages/SerranitoQuiz";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Index />} />
+            <Route path="/serranito-quiz" element={<SerranitoQuiz />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/users" element={<UsersPanel />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

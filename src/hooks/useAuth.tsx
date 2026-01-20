@@ -6,6 +6,7 @@ interface User {
   email: string;
   id: string;
   display_name?: string;
+  serranito_completed?: boolean;
 }
 
 interface AuthContextType {
@@ -14,6 +15,7 @@ interface AuthContextType {
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
+  refreshUser: () => void;
   loading: boolean;
 }
 
@@ -105,7 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userData: User = {
         email,
         id: existingUser.id,
-        display_name: existingUser.display_name
+        display_name: existingUser.display_name,
+        serranito_completed: existingUser.serranito_completed || false
       };
 
       // Store user in localStorage
@@ -136,6 +139,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setShowDisplayNameModal(false);
   };
 
+  const refreshUser = () => {
+    const storedUser = localStorage.getItem('serranito_user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setSession({ user: userData });
+      } catch (error) {
+        console.error('Error refreshing user:', error);
+      }
+    }
+  };
+
   const handleDisplayNameComplete = (displayName: string) => {
     if (user) {
       const updatedUser = { ...user, display_name: displayName };
@@ -153,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin,
       login,
       logout,
+      refreshUser,
       loading
     }}>
       {children}
