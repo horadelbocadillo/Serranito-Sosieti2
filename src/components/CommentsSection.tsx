@@ -70,7 +70,7 @@ const fetchComments = async () => {
       .from('comments')
       .select(`
         *,
-        users!inner(display_name)
+        users(display_name, email)
       `)
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
@@ -80,7 +80,7 @@ const fetchComments = async () => {
     // Mapear los datos para incluir display_name en el objeto comment
     const commentsWithNames = (data || []).map(comment => ({
       ...comment,
-      user_display_name: comment.users?.display_name || 'Usuario sin nombre'
+      user_display_name: comment.users?.display_name || comment.users?.email || 'Usuario'
     }));
 
     setComments(commentsWithNames);
@@ -104,7 +104,7 @@ const fetchComments = async () => {
   })
   .select(`
     *,
-    users!inner(display_name)
+    users(display_name, email)
   `)
   .single();
 
@@ -113,7 +113,7 @@ if (error) throw error;
 // Añadir el nuevo comentario con el display_name
 const newCommentWithName = {
   ...data,
-  user_display_name: data.users?.display_name || 'Usuario sin nombre'
+  user_display_name: data.users?.display_name || data.users?.email || 'Usuario'
 };
 
 setComments([...comments, newCommentWithName]);
