@@ -81,7 +81,7 @@ const SerranitoQuiz = () => {
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold">Tu Serranito Perfecto</h1>
             <p className="text-muted-foreground mt-2">
-              Asi es como te gusta el serranito
+              Asi es como te gusta el Serranito
             </p>
           </div>
           <SerranitoResult
@@ -102,8 +102,8 @@ const SerranitoQuiz = () => {
       case 0:
         return (
           <IngredientSelector
-            title="Elige tu carne"
-            subtitle="La base de todo buen serranito"
+            title="Elige el tipo de carne"
+            subtitle="La base de todo buen Serranito"
             ingredients={QUIZ_DATA.carnes}
             selected={selections.carne ? [selections.carne] : []}
             onSelect={(id) => handleSelect('carne', id)}
@@ -112,7 +112,7 @@ const SerranitoQuiz = () => {
       case 1:
         return (
           <IngredientSelector
-            title="Elige tu pan"
+            title="Elige el pan"
             subtitle="El abrazo perfecto para tu serranito"
             ingredients={QUIZ_DATA.panes}
             selected={selections.pan ? [selections.pan] : []}
@@ -123,7 +123,7 @@ const SerranitoQuiz = () => {
         return (
           <IngredientSelector
             title="Lo que no puede faltar"
-            subtitle="Los acompanantes de siempre"
+            subtitle="Los acompañantes de siempre"
             ingredients={QUIZ_DATA.otrosIngredientes}
             selected={selections.otrosIngredientes}
             onSelect={(id) => handleSelect('otrosIngredientes', id, true)}
@@ -159,7 +159,7 @@ const SerranitoQuiz = () => {
               <span>🥖</span>
             </CardTitle>
             <p className="text-muted-foreground mt-2">
-              Descubre cual es tu serranito ideal
+              Descubre cual es tu Serranito ideal
             </p>
           </CardHeader>
 
@@ -199,7 +199,7 @@ const SerranitoQuiz = () => {
                     </>
                   ) : (
                     <>
-                      Ver mi serranito
+                      Ver mi Serranito
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}
