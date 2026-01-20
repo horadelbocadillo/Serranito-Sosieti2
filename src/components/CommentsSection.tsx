@@ -54,6 +54,13 @@ const CommentsSection = ({ postId }: CommentsSectionProps) => {
   // Obtener los comentarios del post
   useEffect(() => {
     fetchComments();
+
+    // Polling cada 5 segundos para refrescar comentarios automáticamente
+    const interval = setInterval(() => {
+      fetchComments();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [postId]);
 
 const fetchComments = async () => {
