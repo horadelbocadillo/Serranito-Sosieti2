@@ -1,7 +1,7 @@
 # Serranito Sosieti - Contexto del Proyecto
 
 ## Descripcion General
-Aplicacion social/comunidad para aficionados al serranito sevillano. Permite a usuarios compartir posts, eventos, comentar y reaccionar con emojis.
+Aplicacion social/comunidad para aficionados al serranito sevillano. Permite a usuarios comentar posts, eventos y reaccionar con emojis. El único que puede crear post es el Admin. Esto funciona como un club privado al que se tiene acceso mediante una clave única que es el Admin el que la crea y cambia bajo su criterio.
 
 ## Stack Tecnologico
 
@@ -60,7 +60,9 @@ supabase/
 ├── functions/
 │   ├── admin-posts/           # CRUD posts para admin
 │   └── generate-serranito/    # Generacion descripcion IA
-└── migrations/                # Migraciones SQL
+├── migrations/                # Migraciones SQL
+└── triggers/
+    └── gamification.sql       # Trigger comentario automatico quiz
 ```
 
 ## Base de Datos (Supabase)
@@ -179,8 +181,23 @@ toast({ title: "Exito", description: "Mensaje" });
 
 ```
 SUPABASE_URL=https://jrvwprlhtmlmokzynezh.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
+SUPABASE_ANON_KEY=<TU_ANON_KEY>
 ```
+
+## Requisitos
+
+- **Node.js >= 18** (requerido por Vite 5.x)
+
+## Estado de RLS por Tabla
+
+<!-- TODO: Completar con el estado actual en Supabase -->
+| Tabla | RLS |
+|-------|-----|
+| users | ? |
+| posts | ? |
+| comments | ? |
+| reactions | ? |
+| config | ? |
 
 ## Comandos Utiles
 
@@ -222,68 +239,44 @@ supabase functions deploy generate-serranito  # Deploy edge function
 4. Implementar código frontend/backend
 5. Probar
 
-## Sistema de Gamificación - Quiz Serranito
+## Sistema de Gamificacion - Quiz Serranito
 
-### Trigger Automático de Comentarios
-**ESTADO ACTUAL**: ACTIVO ✅
+### Trigger Automatico de Comentarios
+**ESTADO ACTUAL**: ACTIVO
 
-Existe un trigger SQL en la base de datos que se ejecuta automáticamente cuando un usuario completa el quiz del serranito:
-
-```sql
--- Función que inserta comentario automático
-CREATE OR REPLACE FUNCTION public.insert_gamification_comment()
-RETURNS TRIGGER AS $$
-DECLARE
-    target_post_id uuid;
-    admin_id uuid;
-BEGIN
-    -- Solo actuamos si el usuario ha completado el juego y antes no lo estaba
-    IF (NEW.serranito_completed = true AND (OLD.serranito_completed IS NULL OR OLD.serranito_completed = false)) THEN
-
-        -- Buscamos el ID del último post del administrador
-        SELECT p.id INTO target_post_id
-        FROM public.posts p
-        JOIN public.users u ON p.author_id = u.id
-        WHERE u.is_admin = true
-        ORDER BY p.created_at DESC
-        LIMIT 1;
-
-        -- Si encontramos el post, insertamos el comentario
-        IF target_post_id IS NOT NULL THEN
-            INSERT INTO public.comments (id, post_id, user_id, content, created_at, updated_at)
-            VALUES (
-                gen_random_uuid(),
-                target_post_id,
-                NEW.id,
-                '¡He completado el juego! Mi resultado: ' || (NEW.serranito_result::text),
-                now(),
-                now()
-            );
-        END IF;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger que vigila la tabla users
-CREATE TRIGGER trigger_shared_gamification
-AFTER UPDATE ON public.users
-FOR EACH ROW
-EXECUTE FUNCTION public.insert_gamification_comment();
-```
+Existe un trigger SQL que se ejecuta cuando un usuario completa el quiz del serranito.
 
 **Comportamiento**:
-- Cuando `serranito_completed` cambia de `false` a `true`, se crea un comentario automático
-- El comentario se inserta en el **post más reciente del admin** (ordenado por `created_at DESC`)
+- Cuando `serranito_completed` cambia de `false` a `true`, se crea un comentario automatico
+- El comentario se inserta en el **post mas reciente del admin**
 - Contenido: `'¡He completado el juego! Mi resultado: ' || (serranito_result::text)`
 
-**IMPORTANTE**: En futuras sesiones, preguntar al usuario si desea mantener este trigger activo o desactivarlo.
+**SQL completo y comandos para activar/desactivar**: `supabase/triggers/gamification.sql`
 
-**Para desactivar el trigger**:
-```sql
--- Desactivar trigger
-DROP TRIGGER IF EXISTS trigger_shared_gamification ON public.users;
-DROP FUNCTION IF EXISTS public.insert_gamification_comment();
-```
+## Recapitulaciones de Sesion
 
-**Para reactivar el trigger**: Volver a ejecutar el SQL completo mostrado arriba.
+### 2026-01-28
+**Objetivo**: Revisar y optimizar el archivo CLAUDE.md para equilibrar contexto e informacion util
+
+**Acciones**:
+- Analisis completo del archivo CLAUDE.md existente
+- Creacion de `supabase/triggers/gamification.sql` con el SQL del trigger (extraido de CLAUDE.md)
+- Actualizacion de CLAUDE.md: añadida seccion Requisitos (Node >= 18), tabla Estado RLS, placeholder para ANON_KEY
+- Reduccion de la seccion del trigger de 40 lineas a 6 con referencia al archivo externo
+- Creacion del slash command `/recapitula` en `.claude/commands/recapitula.md`
+
+**Archivos modificados**:
+- `Serranito-Sosieti2_codigdo_lovable/CLAUDE.md`
+- `Serranito-Sosieti2_codigdo_lovable/supabase/triggers/gamification.sql` (nuevo)
+- `.claude/commands/recapitula.md` (nuevo)
+
+**Decisiones**:
+- Mover SQL largo a archivo externo: reduce ruido en CLAUDE.md sin perder informacion
+- No corregir tildes: no aporta valor funcional al contexto tecnico
+- Usar Vercel en lugar de Lovable: permite flexibilidad en estructura de repos
+
+**Pendientes**:
+- Completar tabla de RLS con estado real de cada tabla en Supabase
+- Decidir estructura de repos (fusionar o mantener separados) y hacer commit
+
+---
